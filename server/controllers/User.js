@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { createError } from "../error.js";
 import User from "../models/User.js";
 import Orders from "../models/Orders.js";
-
+import mongoose from "mongoose";
 dotenv.config();
 
 // Auth
@@ -164,20 +164,14 @@ export const placeOrder = async (req, res, next) => {
 
 export const getAllOrders = async (req, res, next) => {
   try {
-    const { productId } = req.body;
     const userJWT = req.user;
-    const user = await User.findById(userJWT.id);
-    if (!user.favourites.includes(productId)) {
-      user.favourites.push(productId);
-      await user.save();
-    }
-    return res
-      .status(200)
-      .json({ message: "Product added to favorites successfully", user });
+    const orders = await Orders.find({ user: userJWT.id }).populate("products.product");
+    return res.status(200).json(orders);
   } catch (err) {
     next(err);
   }
 };
+
 
 //Favorites
 
@@ -189,8 +183,7 @@ export const removeFromFavorites = async (req, res, next) => {
     user.favourites = user.favourites.filter((fav) => !fav.equals(productId));
     await user.save();
 
-    return res
-      .status(200)
+    return res.status(200)
       .json({ message: "Product removed from favorites successfully", user });
   } catch (err) {
     next(err);
@@ -200,34 +193,52 @@ export const removeFromFavorites = async (req, res, next) => {
 export const addToFavorites = async (req, res, next) => {
   try {
     const { productId } = req.body;
-    const userJWT = req.user;
-    const user = await User.findById(userJWT.id);
+    console.log("🔍 Request to add favorite:", productId);
 
-    if (!user.favourites.includes(productId)) {
-      user.favourites.push(productId);
-      await user.save();
+    if (!productId) return next(createError(400, "productId is required"));
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return next(createError(400, "Invalid productId format"));
     }
 
-    return res
-      .status(200)
-      .json({ message: "Product added to favorites successfully", user });
+    const userJWT = req.user;
+    const user = await User.findById(userJWT.id);
+    if (!user) return next(createError(404, "User not found"));
+
+    // ✅ Use .some + .equals for ObjectId comparison
+    const alreadyFavorite = user.favourites.some(fav => fav.equals(productId));
+
+    if (!alreadyFavorite) {
+      user.favourites.push(productId);
+      await user.save();
+      console.log("✅ Added to favorites:", productId);
+    }
+
+    return res.status(200).json({ message: "Product added to favorites", user });
   } catch (err) {
-    next(err);
+    console.error("❌ addToFavorites Error:", err);
+    return res.status(500).json({ message: "Internal Server Error", error: err.message });
   }
 };
+
 
 export const getUserFavorites = async (req, res, next) => {
   try {
-    console.log("User ID from token:", req.user?.id); // ✅ Add this line
+    console.log("User ID from token:", req.user?.id);
     const userId = req.user.id;
+
     const user = await User.findById(userId).populate("favourites").exec();
+    
     if (!user) {
+      console.log("⚠️ User not found in DB");
       return next(createError(404, "User not found"));
     }
-    const favoriteProducts = user.favourites;
-    return res.status(200).json(favoriteProducts);
+
+    console.log("✅ Fetched favourites:", user.favourites);
+    return res.status(200).json(user.favourites);
   } catch (err) {
-    console.error("💥 Error in getUserFavorites:", err); // ✅ Add this line
-    next(err);
+    console.error("❌ getUserFavorites Error:", err);
+    return res.status(500).json({ message: "Internal Server Error", error: err.message });
   }
 };
+

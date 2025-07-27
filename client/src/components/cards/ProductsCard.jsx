@@ -2,10 +2,11 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { CircularProgress, Rating } from "@mui/material";
 import {
+  AddShoppingCartOutlined,
   FavoriteBorder,
   FavoriteRounded,
   ShoppingBagOutlined,
-  
+  ShoppingCart,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import {
@@ -219,10 +220,9 @@ const ProductsCard = ({ product }) => {
       });
   };
 
-useEffect(() => {
-  checkFavorite();
-}, [checkFavorite]);
-
+  useEffect(() => {
+    checkFavorite();
+  }, [favorite]);
   return (
     <Card>
       <Top>

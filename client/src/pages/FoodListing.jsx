@@ -103,9 +103,9 @@ const FoodListing = () => {
     });
   };
 
- useEffect(() => {
-  getFilteredProductsData();
-}, [getFilteredProductsData]);
+  useEffect(() => {
+    getFilteredProductsData();
+  }, [priceRange, selectedCategories]);
 
   return (
     <Container>

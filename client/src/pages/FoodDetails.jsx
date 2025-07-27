@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import Button from "../components/Button";
 import {
-  // FavoriteBorder,
+  FavoriteBorder,
   FavoriteBorderOutlined,
   FavoriteRounded,
 } from "@mui/icons-material";
@@ -11,7 +11,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   addToCart,
   addToFavourite,
-  // deleteFromCart,
+  deleteFromCart,
   deleteFromFavourite,
   getFavourite,
   getProductDetails,
@@ -192,30 +192,32 @@ const FoodDetails = () => {
       });
   };
 
- const checkFavorite = async () => {
-  setFavoriteLoading(true);
-  const token = localStorage.getItem("krist-app-token");
+  const checkFavorite = async () => {
+    setFavoriteLoading(true);
+    const token = localStorage.getItem("krist-app-token");
+    await getFavourite(token, { productId: id })
+      .then((res) => {
+        const isFavorite = res.data?.some((favorite) => favorite._id === id);
 
-  try {
-    const res = await getFavourite(token); // ✅ only pass token
-    const isFavorite = res.data?.some((favorite) => favorite._id === id);
-    setFavorite(isFavorite);
-  } catch (err) {
-    dispatch(
-      openSnackbar({
-        message: err.response?.data?.message || err.message,
-        severity: "error",
+        setFavorite(isFavorite);
+
+        setFavoriteLoading(false);
       })
-    );
-  } finally {
-    setFavoriteLoading(false);
-  }
-};
+      .catch((err) => {
+        setFavoriteLoading(false);
+        dispatch(
+          openSnackbar({
+            message: err.message,
+            severity: "error",
+          })
+        );
+      });
+  };
 
   useEffect(() => {
-  checkFavorite();
-  getProduct();
-}, [checkFavorite, getProduct]);
+    getProduct();
+    checkFavorite();
+  }, []);
 
   const addCart = async () => {
     setCartLoading(true);
@@ -258,11 +260,19 @@ const FoodDetails = () => {
             <Desc>{product?.desc}</Desc>
 
             <Ingridents>
-              Ingridents
               <Items>
-                {product?.ingredients.map((ingredient) => (
-                  <Item>{ingredient}</Item>
-                ))}
+              {product?.ingredients && product.ingredients.length > 0 && (
+  <Ingridents>
+    Ingredients
+    <Items>
+      {product.ingredients.map((ingredient, index) => (
+        <Item key={index}>{ingredient}</Item>
+      ))}
+    </Items>
+  </Ingridents>
+)}
+
+
               </Items>
             </Ingridents>
 

@@ -1,218 +1,124 @@
-import { CloseRounded, Visibility, VisibilityOff } from "@mui/icons-material";
 import React, { useState } from "react";
 import styled from "styled-components";
+import TextInput from "./TextInput";
+import Button from "./Button";
+import { UserSignUp } from "../api";
+import { useDispatch } from "react-redux";
+import { loginSuccess } from "../redux/reducers/UserSlice";
+import { openSnackbar } from "../redux/reducers/SnackbarSlice";
 
 const Container = styled.div`
-  flex: 1;
+  width: 100%;
+  max-width: 500px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 36px;
 `;
-
-const Label = styled.label`
-  font-size: 12px;
+const Title = styled.div`
+  font-size: 30px;
+  font-weight: 800;
   color: ${({ theme }) => theme.primary};
-  padding: 0px 4px;
-  ${({ error, theme }) =>
-    error &&
-    `
-    color: ${theme.red};
-  `}
-  ${({ small }) =>
-    small &&
-    `
-    font-size: 8px;
-  `}
-  ${({ popup, theme }) =>
-    popup &&
-    `
-  color: ${theme.popup_text_secondary};
-  `}
+`;
+const Span = styled.div`
+  font-size: 16px;
+  font-weight: 400;
+  color: ${({ theme }) => theme.text_secondary + 90};
 `;
 
-const OutlinedInput = styled.div`
-  border-radius: 8px;
-  border: 0.5px solid ${({ theme }) => theme.text_secondary};
-  background-color: transparent;
-  color: ${({ theme }) => theme.text_primary};
-  outline: none;
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  &:focus-within {
-    border-color: ${({ theme }) => theme.secondary};
-  }
-  ${({ error, theme }) =>
-    error &&
-    `
-    border-color: ${theme.red};
-  `}
+const SignUp = ({ setOpenAuth }) => {
+  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
+  const [buttonDisabled, setButtonDisabled] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  ${({ chipableInput, height, theme }) =>
-    chipableInput &&
-    `
-    background: ${theme.card};
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    min-height: ${height}
-  `}
+  const validateInputs = () => {
+    if (!name || !email || !password) {
+      alert("Please fill in all fields");
+      return false;
+    }
+    return true;
+  };
 
-  ${({ small }) =>
-    small &&
-    `
-    border-radius: 6px;
-    padding: 8px 10px;
-  `}
+  const handleSignUp = async () => {
+    setLoading(true);
+    setButtonDisabled(true);
 
-  ${({ popup, theme }) =>
-    popup &&
-    `
-  color: ${theme.popup_text_secondary};
-  border: 0.5px solid ${theme.popup_text_secondary + 60};
-  `}
-`;
-
-const Input = styled.input`
-  width: 100%;
-  font-size: 14px;
-  outline: none;
-  border: none;
-  background-color: transparent;
-  color: ${({ theme }) => theme.primary};
-  &:focus {
-    outline: none;
-  }
-  ${({ small }) =>
-    small &&
-    `
-    font-size: 12px;
-  `}
-
-  ${({ popup, theme }) =>
-    popup &&
-    `
-  color: ${theme.popup_text_secondary};
-  `} ${({ theme }) => theme.popup_text_secondary};
-`;
-
-const Error = styled.p`
-  font-size: 12px;
-  margin: 0px 4px;
-  color: ${({ theme }) => theme.red};
-  ${({ small }) =>
-    small &&
-    `
-    font-size: 8px;
-  `}
-`;
-
-const ChipWrapper = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-`;
-
-const Chip = styled.div`
-  padding: 5px 10px;
-  border-radius: 8px;
-  background: ${({ theme }) => theme.primary + 10};
-  color: ${({ theme }) => theme.primary};
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-`;
-
-const TextInput = ({
-  label,
-  placeholder,
-  name,
-  value,
-  error,
-  handelChange,
-  textArea,
-  rows,
-  columns,
-  chipableInput,
-  chipableArray,
-  removeChip,
-  height,
-  small,
-  popup,
-  password,
-}) => {
-  const [showPassword, setShowPassword] = useState(false);
+    if (validateInputs()) {
+      await UserSignUp({ name, email, password })
+        .then((res) => {
+          dispatch(loginSuccess(res.data));
+          dispatch(
+            openSnackbar({
+              message: "Sign Up Successful",
+              severity: "success",
+            })
+          );
+          setLoading(false);
+          setButtonDisabled(false);
+          setOpenAuth(false);
+        })
+        .catch((err) => {
+          setButtonDisabled(false);
+          if (err.response) {
+            setLoading(false);
+            setButtonDisabled(false);
+            alert(err.response.data.message);
+            dispatch(
+              openSnackbar({
+                message: err.response.data.message,
+                severity: "error",
+              })
+            );
+          } else {
+            setLoading(false);
+            setButtonDisabled(false);
+            dispatch(
+              openSnackbar({
+                message: err.message,
+                severity: "error",
+              })
+            );
+          }
+        });
+    }
+  };
   return (
-    <Container small={small}>
-      <Label small={small} popup={popup} error={error}>
-        {label}
-      </Label>
-      <OutlinedInput
-        small={small}
-        popup={popup}
-        error={error}
-        chipableInput={chipableInput}
-        height={height}
-      >
-        {chipableInput ? (
-          <ChipWrapper>
-            {chipableArray.map((chip, index) => (
-              <Chip key={index}>
-                <span>{chip}</span>
-                <CloseRounded
-                  sx={{ fontSize: "14px" }}
-                  onClick={() => removeChip(name, index)}
-                />
-              </Chip>
-            ))}
-            <Input
-              placeholder={placeholder}
-              name={name}
-              value={value}
-              onChange={(e) => handelChange(e)}
-            />
-          </ChipWrapper>
-        ) : (
-          <>
-            <Input
-              popup={popup}
-              small={small}
-              as={textArea ? "textarea" : "input"}
-              name={name}
-              rows={rows}
-              columns={columns}
-              placeholder={placeholder}
-              value={value}
-              onChange={(e) => handelChange(e)}
-              type={password && !showPassword ? "password" : "text"}
-            />
-            {password && (
-              <>
-                {showPassword ? (
-                  <>
-                    <Visibility onClick={() => setShowPassword(false)} />
-                  </>
-                ) : (
-                  <>
-                    <VisibilityOff onClick={() => setShowPassword(true)} />
-                  </>
-                )}
-              </>
-            )}
-          </>
-        )}
-      </OutlinedInput>
-      {error && (
-        <Error small={small} popup={popup}>
-          {error}
-        </Error>
-      )}
+    <Container>
+      <div>
+        <Title>Create New Account 👋</Title>
+        <Span>Please enter details to create a new account</Span>
+      </div>
+      <div style={{ display: "flex", gap: "20px", flexDirection: "column" }}>
+        <TextInput
+          label="Full Name"
+          placeholder="Enter your full name"
+          value={name}
+          handelChange={(e) => setName(e.target.value)}
+        />
+        <TextInput
+          label="Email Address"
+          placeholder="Enter your email address"
+          value={email}
+          handelChange={(e) => setEmail(e.target.value)}
+        />
+        <TextInput
+          label="Password"
+          placeholder="Enter your password"
+          password
+          value={password}
+          handelChange={(e) => setPassword(e.target.value)}
+        />
+        <Button
+          text="Sign Up"
+          onClick={handleSignUp}
+          isLoading={loading}
+          isDisabled={buttonDisabled}
+        />
+      </div>
     </Container>
   );
 };
 
-export default TextInput;
+export default SignUp;

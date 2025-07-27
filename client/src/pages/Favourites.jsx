@@ -67,8 +67,9 @@ const Favourites = () => {
           ) : (
             <>
               {products.map((product) => (
-                <ProductsCard product={product} />
-              ))}
+  <ProductsCard key={product._id} product={product} />
+))}
+
             </>
           )}
         </CardWrapper>
